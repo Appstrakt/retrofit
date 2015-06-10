@@ -16,84 +16,44 @@
  */
 package retrofit;
 
-import java.io.ByteArrayOutputStream;
+import com.squareup.okhttp.Response;
+import com.squareup.okhttp.ResponseBody;
 import java.io.IOException;
-import java.io.InputStream;
+import java.lang.reflect.Array;
+import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
+import java.lang.reflect.WildcardType;
+import java.util.Arrays;
 import java.util.concurrent.Executor;
-import retrofit.client.Request;
-import retrofit.client.Response;
-import retrofit.mime.TypedByteArray;
-import retrofit.mime.TypedInput;
-import retrofit.mime.TypedOutput;
+import okio.Buffer;
+import okio.BufferedSource;
+import okio.Source;
 
 final class Utils {
-  private static final int BUFFER_SIZE = 0x1000;
-
-  /**
-   * Creates a {@code byte[]} from reading the entirety of an {@link InputStream}. May return an
-   * empty array but never {@code null}.
-   * <p>
-   * Copied from Guava's {@code ByteStreams} class.
-   */
-  static byte[] streamToBytes(InputStream stream) throws IOException {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    if (stream != null) {
-      byte[] buf = new byte[BUFFER_SIZE];
-      int r;
-      while ((r = stream.read(buf)) != -1) {
-        baos.write(buf, 0, r);
-      }
+  static <T> T checkNotNull(T object, String message) {
+    if (object == null) {
+      throw new NullPointerException(message);
     }
-    return baos.toByteArray();
+    return object;
   }
 
   /**
-   * Conditionally replace a {@link Request} with an identical copy whose body is backed by a
-   * byte[] rather than an input stream.
+   * Replace a {@link Response} with an identical copy whose body is backed by a
+   * {@link Buffer} rather than a {@link Source}.
    */
-  static Request readBodyToBytesIfNecessary(Request request) throws IOException {
-    TypedOutput body = request.getBody();
-    if (body == null || body instanceof TypedByteArray) {
-      return request;
+  static ResponseBody readBodyToBytesIfNecessary(final ResponseBody body) throws IOException {
+    if (body == null) {
+      return null;
     }
 
-    String bodyMime = body.mimeType();
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    body.writeTo(baos);
-    body = new TypedByteArray(bodyMime, baos.toByteArray());
+    BufferedSource source = body.source();
+    final Buffer buffer = new Buffer();
+    buffer.writeAll(source);
+    source.close();
 
-    return new Request(request.getMethod(), request.getUrl(), request.getHeaders(), body);
-  }
-
-  /**
-   * Conditionally replace a {@link Response} with an identical copy whose body is backed by a
-   * byte[] rather than an input stream.
-   */
-  static Response readBodyToBytesIfNecessary(Response response) throws IOException {
-    TypedInput body = response.getBody();
-    if (body == null || body instanceof TypedByteArray) {
-      return response;
-    }
-
-    String bodyMime = body.mimeType();
-    InputStream is = body.in();
-    try {
-      byte[] bodyBytes = Utils.streamToBytes(is);
-      body = new TypedByteArray(bodyMime, bodyBytes);
-
-      return replaceResponseBody(response, body);
-    } finally {
-      if (is != null) {
-        try {
-          is.close();
-        } catch (IOException ignored) {
-        }
-      }
-    }
-  }
-
-  static Response replaceResponseBody(Response response, TypedInput body) {
-    return new Response(response.getStatus(), response.getReason(), response.getHeaders(), body);
+    return ResponseBody.create(body.contentType(), body.contentLength(), buffer);
   }
 
   static <T> void validateServiceClass(Class<T> service) {
@@ -105,6 +65,80 @@ final class Utils {
     // the recommended pattern.
     if (service.getInterfaces().length > 0) {
       throw new IllegalArgumentException("Interface definitions must not extend other interfaces.");
+    }
+  }
+
+  public static Type getSingleParameterUpperBound(ParameterizedType type) {
+    Type[] types = type.getActualTypeArguments();
+    if (types.length != 1) {
+      throw new IllegalArgumentException(
+          "Expected one type argument but got: " + Arrays.toString(types));
+    }
+    Type paramType = types[0];
+    if (paramType instanceof WildcardType) {
+      return ((WildcardType) paramType).getUpperBounds()[0];
+    }
+    return paramType;
+  }
+
+  public static boolean hasUnresolvableType(Type type) {
+    if (type instanceof Class<?>) {
+      return false;
+    }
+    if (type instanceof ParameterizedType) {
+      ParameterizedType parameterizedType = (ParameterizedType) type;
+      for (Type typeArgument : parameterizedType.getActualTypeArguments()) {
+        if (hasUnresolvableType(typeArgument)) {
+          return true;
+        }
+      }
+      return false;
+    }
+    if (type instanceof GenericArrayType) {
+      return hasUnresolvableType(((GenericArrayType) type).getGenericComponentType());
+    }
+    if (type instanceof TypeVariable) {
+      return true;
+    }
+    if (type instanceof WildcardType) {
+      return true;
+    }
+    String className = type == null ? "null" : type.getClass().getName();
+    throw new IllegalArgumentException("Expected a Class, ParameterizedType, or "
+        + "GenericArrayType, but <" + type + "> is of type " + className);
+  }
+
+  // This method is copyright 2008 Google Inc. and is taken from Gson under the Apache 2.0 license.
+  public static Class<?> getRawType(Type type) {
+    if (type instanceof Class<?>) {
+      // Type is a normal class.
+      return (Class<?>) type;
+
+    } else if (type instanceof ParameterizedType) {
+      ParameterizedType parameterizedType = (ParameterizedType) type;
+
+      // I'm not exactly sure why getRawType() returns Type instead of Class. Neal isn't either but
+      // suspects some pathological case related to nested classes exists.
+      Type rawType = parameterizedType.getRawType();
+      if (!(rawType instanceof Class)) throw new IllegalArgumentException();
+      return (Class<?>) rawType;
+
+    } else if (type instanceof GenericArrayType) {
+      Type componentType = ((GenericArrayType) type).getGenericComponentType();
+      return Array.newInstance(getRawType(componentType), 0).getClass();
+
+    } else if (type instanceof TypeVariable) {
+      // We could use the variable's bounds, but that won't work if there are multiple. Having a raw
+      // type that's more general than necessary is okay.
+      return Object.class;
+
+    } else if (type instanceof WildcardType) {
+      return getRawType(((WildcardType) type).getUpperBounds()[0]);
+
+    } else {
+      String className = type == null ? "null" : type.getClass().getName();
+      throw new IllegalArgumentException("Expected a Class, ParameterizedType, or "
+          + "GenericArrayType, but <" + type + "> is of type " + className);
     }
   }
 

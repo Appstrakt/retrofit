@@ -15,105 +15,107 @@
  */
 package retrofit;
 
+import com.squareup.okhttp.FormEncodingBuilder;
+import com.squareup.okhttp.Headers;
+import com.squareup.okhttp.HttpUrl;
+import com.squareup.okhttp.MediaType;
+import com.squareup.okhttp.MultipartBuilder;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.RequestBody;
+
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Array;
 import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
 
-import retrofit.client.Header;
-import retrofit.client.Request;
-import retrofit.converter.Converter;
-import retrofit.mime.FormUrlEncodedTypedOutput;
-import retrofit.mime.MultipartTypedOutput;
-import retrofit.mime.TypedOutput;
-import retrofit.mime.TypedString;
+import okio.BufferedSink;
+import retrofit.http.Body;
+import retrofit.http.Field;
+import retrofit.http.FieldMap;
+import retrofit.http.Header;
+import retrofit.http.Part;
+import retrofit.http.PartMap;
+import retrofit.http.Path;
+import retrofit.http.Query;
+import retrofit.http.QueryMap;
+import retrofit.http.Url;
 
-final class RequestBuilder implements RequestInterceptor.RequestFacade {
+final class RequestBuilder {
+    private static final Headers NO_HEADERS = Headers.of();
+    private static final byte[] NO_BODY = new byte[0];
+
     private final Converter converter;
-    private final List<Header> headers;
-    private final StringBuilder queryParams;
-    private final String[] paramNames;
-    private final RestMethodInfo.ParamUsage[] paramUsages;
+    private final Annotation[] paramAnnotations;
     private final String requestMethod;
-    private final boolean isSynchronous;
-    private final boolean isObservable;
+    private final boolean requestHasBody;
+    private final HttpUrl.Builder urlBuilder;
 
-    private final FormUrlEncodedTypedOutput formBody;
-    private final MultipartTypedOutput multipartBody;
-    private TypedOutput body;
+    private MultipartBuilder multipartBuilder;
+    private FormEncodingBuilder formEncodingBuilder;
+    private RequestBody body;
 
-    private String overrideAbsoluteUrl = null;
-
+    private String mAbsoluteUrl;
     private String relativeUrl;
-    private String apiUrl;
+    private Headers.Builder headers;
+    private String contentTypeHeader;
 
-    RequestBuilder(Converter converter, RestMethodInfo methodInfo) {
+    RequestBuilder(HttpUrl url, MethodInfo methodInfo, Converter converter) {
         this.converter = converter;
 
-        paramNames = methodInfo.requestParamNames;
-        paramUsages = methodInfo.requestParamUsage;
+        paramAnnotations = methodInfo.requestParamAnnotations;
         requestMethod = methodInfo.requestMethod;
-        isSynchronous = methodInfo.isSynchronous;
-        isObservable = methodInfo.isObservable;
+        requestHasBody = methodInfo.requestHasBody;
 
-        headers = new ArrayList<Header>();
         if (methodInfo.headers != null) {
-            headers.addAll(methodInfo.headers);
+            headers = methodInfo.headers.newBuilder();
         }
-
-        queryParams = new StringBuilder();
+        contentTypeHeader = methodInfo.contentTypeHeader;
 
         relativeUrl = methodInfo.requestUrl;
 
+        urlBuilder = url.newBuilder();
+
         String requestQuery = methodInfo.requestQuery;
         if (requestQuery != null) {
-            queryParams.append('?').append(requestQuery);
+            urlBuilder.query(requestQuery);
         }
 
-        switch (methodInfo.requestType) {
+        switch (methodInfo.bodyEncoding) {
             case FORM_URL_ENCODED:
-                formBody = new FormUrlEncodedTypedOutput();
-                multipartBody = null;
-                body = formBody;
+                // Will be set to 'body' in 'build'.
+                formEncodingBuilder = new FormEncodingBuilder();
                 break;
             case MULTIPART:
-                formBody = null;
-                multipartBody = new MultipartTypedOutput();
-                body = multipartBody;
+                // Will be set to 'body' in 'build'.
+                multipartBuilder = new MultipartBuilder();
                 break;
-            case SIMPLE:
-                formBody = null;
-                multipartBody = null;
+            case NONE:
                 // If present, 'body' will be set in 'setArguments' call.
                 break;
             default:
-                throw new IllegalArgumentException("Unknown request type: " + methodInfo.requestType);
+                throw new IllegalArgumentException("Unknown request type: " + methodInfo.bodyEncoding);
         }
     }
 
-    void setApiUrl(String apiUrl) {
-        this.apiUrl = apiUrl;
-    }
-
-    @Override
     public void addHeader(String name, String value) {
         if (name == null) {
             throw new IllegalArgumentException("Header name must not be null.");
         }
-        headers.add(new Header(name, value));
+        if ("Content-Type".equalsIgnoreCase(name)) {
+            contentTypeHeader = value;
+            return;
+        }
+
+        Headers.Builder headers = this.headers;
+        if (headers == null) {
+            this.headers = headers = new Headers.Builder();
+        }
+        headers.add(name, value);
     }
 
-    @Override
-    public void addPathParam(String name, String value) {
-        addPathParam(name, value, true);
-    }
-
-    @Override
-    public void addEncodedPathParam(String name, String value) {
-        addPathParam(name, value, false);
-    }
-
-    void addPathParam(String name, String value, boolean urlEncodeValue) {
+    private void addPathParam(String name, String value, boolean encoded) {
         if (name == null) {
             throw new IllegalArgumentException("Path replacement name must not be null.");
         }
@@ -122,7 +124,7 @@ final class RequestBuilder implements RequestInterceptor.RequestFacade {
                     "Path replacement \"" + name + "\" value must not be null.");
         }
         try {
-            if (urlEncodeValue) {
+            if (!encoded) {
                 String encodedValue = URLEncoder.encode(String.valueOf(value), "UTF-8");
                 // URLEncoder encodes for use as a query parameter. Path encoding uses %20 to
                 // encode spaces rather than +. Query encoding difference specified in HTML spec.
@@ -138,33 +140,52 @@ final class RequestBuilder implements RequestInterceptor.RequestFacade {
         }
     }
 
-    @Override
-    public void addQueryParam(String name, String value) {
-        addQueryParam(name, value, true);
-    }
-
-    @Override
-    public void addEncodedQueryParam(String name, String value) {
-        addQueryParam(name, value, false);
-    }
-
-    void addQueryParam(String name, String value, boolean urlEncodeValue) {
-        if (name == null) {
-            throw new IllegalArgumentException("Query param name must not be null.");
-        }
-        if (value == null) {
-            throw new IllegalArgumentException("Query param \"" + name + "\" value must not be null.");
-        }
-        try {
-            if (urlEncodeValue) {
-                value = URLEncoder.encode(String.valueOf(value), "UTF-8");
+    private void addQueryParam(String name, Object value, boolean encoded) {
+        if (value instanceof Iterable) {
+            for (Object iterableValue : (Iterable<?>) value) {
+                if (iterableValue != null) { // Skip null values
+                    addQueryParam(name, iterableValue.toString(), encoded);
+                }
             }
-            StringBuilder queryParams = this.queryParams;
-            queryParams.append(queryParams.length() > 0 ? '&' : '?');
-            queryParams.append(name).append('=').append(value);
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(
-                    "Unable to convert query parameter \"" + name + "\" value to UTF-8: " + value, e);
+        } else if (value.getClass().isArray()) {
+            for (int x = 0, arrayLength = Array.getLength(value); x < arrayLength; x++) {
+                Object arrayValue = Array.get(value, x);
+                if (arrayValue != null) { // Skip null values
+                    addQueryParam(name, arrayValue.toString(), encoded);
+                }
+            }
+        } else {
+            addQueryParam(name, value.toString(), encoded);
+        }
+    }
+
+    private void addQueryParam(String name, String value, boolean encoded) {
+        if (encoded) {
+            urlBuilder.addEncodedQueryParameter(name, value);
+        } else {
+            urlBuilder.addQueryParameter(name, value);
+        }
+    }
+
+    private void addQueryParamMap(int parameterNumber, Map<?, ?> map, boolean encoded) {
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+            Object entryKey = entry.getKey();
+            if (entryKey == null) {
+                throw new IllegalArgumentException(
+                        "Parameter #" + (parameterNumber + 1) + " query map contained null key.");
+            }
+            Object entryValue = entry.getValue();
+            if (entryValue != null) { // Skip null values.
+                addQueryParam(entryKey.toString(), entryValue.toString(), encoded);
+            }
+        }
+    }
+
+    private void addFormField(String name, String value, boolean encoded) {
+        if (encoded) {
+            formEncodingBuilder.addEncoded(name, value);
+        } else {
+            formEncodingBuilder.add(name, value);
         }
     }
 
@@ -172,111 +193,216 @@ final class RequestBuilder implements RequestInterceptor.RequestFacade {
         if (args == null) {
             return;
         }
-        int count = args.length;
-        if (!isSynchronous && !isObservable) {
-            count -= 1;
-        }
-        for (int i = 0; i < count; i++) {
-            String name = paramNames[i];
+        for (int i = 0; i < args.length; i++) {
             Object value = args[i];
-            RestMethodInfo.ParamUsage paramUsage = paramUsages[i];
-            switch (paramUsage) {
-                case PATH:
-                    if (value == null) {
-                        throw new IllegalArgumentException(
-                                "Path parameter \"" + name + "\" value must not be null.");
-                    }
-                    addPathParam(name, value.toString());
-                    break;
-                case ENCODED_PATH:
-                    if (value == null) {
-                        throw new IllegalArgumentException(
-                                "Path parameter \"" + name + "\" value must not be null.");
-                    }
-                    addEncodedPathParam(name, value.toString());
-                    break;
-                case QUERY:
-                    if (value != null) { // Skip null values.
-                        addQueryParam(name, value.toString());
-                    }
-                    break;
-                case ENCODED_QUERY:
-                    if (value != null) { // Skip null values.
-                        addEncodedQueryParam(name, value.toString());
-                    }
-                    break;
-                case HEADER:
-                    if (value != null) { // Skip null values.
+
+            Annotation annotation = paramAnnotations[i];
+            Class<? extends Annotation> annotationType = annotation.annotationType();
+            if (annotationType == Url.class) {
+                //Every argument has to have an annotion
+                mAbsoluteUrl = (String) value;
+                addPathParam("absoluteUrl", "absoluteUrl", true);
+
+            } else if (annotationType == Path.class) {
+                Path path = (Path) annotation;
+                String name = path.value();
+                if (value == null) {
+                    throw new IllegalArgumentException(
+                            "Path parameter \"" + name + "\" value must not be null.");
+                }
+                addPathParam(name, value.toString(), path.encoded());
+            } else if (annotationType == Query.class) {
+                if (value != null) { // Skip null values.
+                    Query query = (Query) annotation;
+                    addQueryParam(query.value(), value, query.encoded());
+                }
+            } else if (annotationType == QueryMap.class) {
+                if (value != null) { // Skip null values.
+                    QueryMap queryMap = (QueryMap) annotation;
+                    addQueryParamMap(i, (Map<?, ?>) value, queryMap.encoded());
+                }
+            } else if (annotationType == Header.class) {
+                if (value != null) { // Skip null values.
+                    String name = ((Header) annotation).value();
+                    if (value instanceof Iterable) {
+                        for (Object iterableValue : (Iterable<?>) value) {
+                            if (iterableValue != null) { // Skip null values.
+                                addHeader(name, iterableValue.toString());
+                            }
+                        }
+                    } else if (value.getClass().isArray()) {
+                        for (int x = 0, arrayLength = Array.getLength(value); x < arrayLength; x++) {
+                            Object arrayValue = Array.get(value, x);
+                            if (arrayValue != null) { // Skip null values.
+                                addHeader(name, arrayValue.toString());
+                            }
+                        }
+                    } else {
                         addHeader(name, value.toString());
                     }
-                    break;
-                case FIELD:
-                    if (value != null) { // Skip null values.
-                        formBody.addField(name, value.toString());
+                }
+            } else if (annotationType == Field.class) {
+                if (value != null) { // Skip null values.
+                    Field field = (Field) annotation;
+                    String name = field.value();
+                    boolean encoded = field.encoded();
+                    if (value instanceof Iterable) {
+                        for (Object iterableValue : (Iterable<?>) value) {
+                            if (iterableValue != null) { // Skip null values.
+                                addFormField(name, iterableValue.toString(), encoded);
+                            }
+                        }
+                    } else if (value.getClass().isArray()) {
+                        for (int x = 0, arrayLength = Array.getLength(value); x < arrayLength; x++) {
+                            Object arrayValue = Array.get(value, x);
+                            if (arrayValue != null) { // Skip null values.
+                                addFormField(name, arrayValue.toString(), encoded);
+                            }
+                        }
+                    } else {
+                        addFormField(name, value.toString(), encoded);
                     }
-                    break;
-                case PART:
-                    if (value != null) { // Skip null values.
-                        if (value instanceof TypedOutput) {
-                            multipartBody.addPart(name, (TypedOutput) value);
-                        } else if (value instanceof String) {
-                            multipartBody.addPart(name, new TypedString((String) value));
-                        } else {
-                            multipartBody.addPart(name, converter.toBody(value));
+                }
+            } else if (annotationType == FieldMap.class) {
+                if (value != null) { // Skip null values.
+                    FieldMap fieldMap = (FieldMap) annotation;
+                    boolean encoded = fieldMap.encoded();
+                    for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
+                        Object entryKey = entry.getKey();
+                        if (entryKey == null) {
+                            throw new IllegalArgumentException(
+                                    "Parameter #" + (i + 1) + " field map contained null key.");
+                        }
+                        Object entryValue = entry.getValue();
+                        if (entryValue != null) { // Skip null values.
+                            addFormField(entryKey.toString(), entryValue.toString(), encoded);
                         }
                     }
-                    break;
-                case BODY:
-                    if (value == null) {
-                        throw new IllegalArgumentException("Body parameter value must not be null.");
-                    }
-                    if (value instanceof TypedOutput) {
-                        body = (TypedOutput) value;
+                }
+            } else if (annotationType == Part.class) {
+                if (value != null) { // Skip null values.
+                    String name = ((Part) annotation).value();
+                    String transferEncoding = ((Part) annotation).encoding();
+                    Headers headers = Headers.of(
+                            "Content-Disposition", "name=\"" + name + "\"",
+                            "Content-Transfer-Encoding", transferEncoding);
+                    if (value instanceof RequestBody) {
+                        multipartBuilder.addPart(headers, (RequestBody) value);
+                    } else if (value instanceof String) {
+                        multipartBuilder.addPart(headers,
+                                RequestBody.create(MediaType.parse("text/plain"), (String) value));
                     } else {
-                        body = converter.toBody(value);
+                        multipartBuilder.addPart(headers, converter.toBody(value, value.getClass()));
                     }
-                    break;
-                case URL:
-                    //No there is no uri support, just a simple string
-                    this.overrideAbsoluteUrl = (String) value;
-                    this.relativeUrl = overrideAbsoluteUrl;
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unknown parameter usage: " + paramUsage);
+                }
+            } else if (annotationType == PartMap.class) {
+                if (value != null) { // Skip null values.
+                    String transferEncoding = ((PartMap) annotation).encoding();
+                    for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
+                        Object entryKey = entry.getKey();
+                        if (entryKey == null) {
+                            throw new IllegalArgumentException(
+                                    "Parameter #" + (i + 1) + " part map contained null key.");
+                        }
+                        String entryName = entryKey.toString();
+                        Object entryValue = entry.getValue();
+                        Headers headers = Headers.of(
+                                "Content-Disposition", "name=\"" + entryName + "\"",
+                                "Content-Transfer-Encoding", transferEncoding);
+                        if (entryValue != null) { // Skip null values.
+                            if (entryValue instanceof RequestBody) {
+                                multipartBuilder.addPart(headers, (RequestBody) entryValue);
+                            } else if (entryValue instanceof String) {
+                                multipartBuilder.addPart(headers,
+                                        RequestBody.create(MediaType.parse("text/plain"), (String) entryValue));
+                            } else {
+                                multipartBuilder.addPart(headers,
+                                        converter.toBody(entryValue, entryValue.getClass()));
+                            }
+                        }
+                    }
+                }
+            } else if (annotationType == Body.class) {
+                if (value == null) {
+                    throw new IllegalArgumentException("Body parameter value must not be null.");
+                }
+                if (value instanceof RequestBody) {
+                    body = (RequestBody) value;
+                } else {
+                    body = converter.toBody(value, value.getClass());
+                }
+            } else {
+                throw new IllegalArgumentException(
+                        "Unknown annotation: " + annotationType.getCanonicalName());
             }
         }
     }
 
-    Request build() throws UnsupportedEncodingException {
+    Request build() {
+        urlBuilder.encodedPath(relativeUrl);
 
-        if (multipartBody != null && multipartBody.getPartCount() == 0) {
-            throw new IllegalStateException("Multipart requests must contain at least one part.");
-        }
-
-        if (overrideAbsoluteUrl != null) {
-            //Override it
-            StringBuilder url = new StringBuilder(overrideAbsoluteUrl);
-            if (queryParams.length() > 0) {
-                url.append(queryParams);
+        RequestBody body = this.body;
+        if (body == null) {
+            // Try to pull from one of the builders.
+            if (formEncodingBuilder != null) {
+                body = formEncodingBuilder.build();
+            } else if (multipartBuilder != null) {
+                body = multipartBuilder.build();
+            } else if (requestHasBody) {
+                // Body is absent, make an empty body.
+                body = RequestBody.create(null, NO_BODY);
             }
-            return new Request(requestMethod, url.toString(), headers, body);
         }
 
-        String apiUrl = this.apiUrl;
+        Headers.Builder headerBuilder = this.headers;
+        if (contentTypeHeader != null) {
+            if (body != null) {
+                body = new MediaTypeOverridingRequestBody(body, contentTypeHeader);
+            } else {
+                if (headerBuilder == null) {
+                    headerBuilder = new Headers.Builder();
+                }
+                headerBuilder.add("Content-Type", contentTypeHeader);
+            }
+        }
+        Headers headers = headerBuilder != null ? headerBuilder.build() : NO_HEADERS;
 
-        StringBuilder url = new StringBuilder(apiUrl);
-        if (apiUrl.endsWith("/")) {
-            // We require relative paths to start with '/'. Prevent a double-slash.
-            url.deleteCharAt(url.length() - 1);
+        if (mAbsoluteUrl != null) {
+            return new Request.Builder()
+                    .url(mAbsoluteUrl)
+                    .method(requestMethod, body)
+                    .headers(headers)
+                    .build();
+        }
+        return new Request.Builder()
+                .url(urlBuilder.build())
+                .method(requestMethod, body)
+                .headers(headers)
+                .build();
+    }
+
+    private static class MediaTypeOverridingRequestBody extends RequestBody {
+        private final RequestBody delegate;
+        private final MediaType mediaType;
+
+        MediaTypeOverridingRequestBody(RequestBody delegate, String mediaType) {
+            this.delegate = delegate;
+            this.mediaType = MediaType.parse(mediaType);
         }
 
-        url.append(relativeUrl);
-
-        StringBuilder queryParams = this.queryParams;
-        if (queryParams.length() > 0) {
-            url.append(queryParams);
+        @Override
+        public MediaType contentType() {
+            return mediaType;
         }
 
-        return new Request(requestMethod, url.toString(), headers, body);
+        @Override
+        public long contentLength() throws IOException {
+            return delegate.contentLength();
+        }
+
+        @Override
+        public void writeTo(BufferedSink sink) throws IOException {
+            delegate.writeTo(sink);
+        }
     }
 }

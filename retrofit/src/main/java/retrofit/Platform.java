@@ -16,27 +16,14 @@
 package retrofit;
 
 import android.os.Build;
-import android.os.Process;
-import com.google.gson.Gson;
+import android.os.Handler;
+import android.os.Looper;
+import com.squareup.okhttp.OkHttpClient;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import retrofit.android.AndroidApacheClient;
-import retrofit.android.AndroidLog;
-import retrofit.android.MainThreadExecutor;
-import retrofit.client.Client;
-import retrofit.client.OkClient;
-import retrofit.client.UrlConnectionClient;
-import retrofit.converter.Converter;
-import retrofit.converter.GsonConverter;
+import java.util.concurrent.TimeUnit;
 
-import static android.os.Process.THREAD_PRIORITY_BACKGROUND;
-import static java.lang.Thread.MIN_PRIORITY;
-
-abstract class Platform {
+class Platform {
   private static final Platform PLATFORM = findPlatform();
-
-  static final boolean HAS_RX_JAVA = hasRxJavaOnClasspath();
 
   static Platform get() {
     return PLATFORM;
@@ -50,131 +37,34 @@ abstract class Platform {
       }
     } catch (ClassNotFoundException ignored) {
     }
-    return new Base();
+
+    return new Platform();
   }
 
-  abstract Converter defaultConverter();
-  abstract Client.Provider defaultClient();
-  abstract Executor defaultHttpExecutor();
-  abstract Executor defaultCallbackExecutor();
-  abstract RestAdapter.Log defaultLog();
+  CallAdapter.Factory defaultCallAdapterFactory() {
+    return new DefaultCallAdapterFactory(new Utils.SynchronousExecutor());
+  }
 
-  /** Provides sane defaults for operation on the JVM. */
-  private static class Base extends Platform {
-    @Override Converter defaultConverter() {
-      return new GsonConverter(new Gson());
-    }
-
-    @Override Client.Provider defaultClient() {
-      final Client client;
-      if (hasOkHttpOnClasspath()) {
-        client = OkClientInstantiator.instantiate();
-      } else {
-        client = new UrlConnectionClient();
-      }
-      return new Client.Provider() {
-        @Override public Client get() {
-          return client;
-        }
-      };
-    }
-
-    @Override Executor defaultHttpExecutor() {
-      return Executors.newCachedThreadPool(new ThreadFactory() {
-        @Override public Thread newThread(final Runnable r) {
-          return new Thread(new Runnable() {
-            @Override public void run() {
-              Thread.currentThread().setPriority(MIN_PRIORITY);
-              r.run();
-            }
-          }, RestAdapter.IDLE_THREAD_NAME);
-        }
-      });
-    }
-
-    @Override Executor defaultCallbackExecutor() {
-      return new Utils.SynchronousExecutor();
-    }
-
-    @Override RestAdapter.Log defaultLog() {
-      return new RestAdapter.Log() {
-        @Override public void log(String message) {
-          System.out.println(message);
-        }
-      };
-    }
+  OkHttpClient defaultClient() {
+    OkHttpClient client = new OkHttpClient();
+    client.setConnectTimeout(15, TimeUnit.SECONDS);
+    client.setReadTimeout(15, TimeUnit.SECONDS);
+    client.setWriteTimeout(15, TimeUnit.SECONDS);
+    return client;
   }
 
   /** Provides sane defaults for operation on Android. */
-  private static class Android extends Platform {
-    @Override Converter defaultConverter() {
-      return new GsonConverter(new Gson());
+  static class Android extends Platform {
+    CallAdapter.Factory defaultCallAdapterFactory() {
+      return new DefaultCallAdapterFactory(new MainThreadExecutor());
     }
 
-    @Override Client.Provider defaultClient() {
-      final Client client;
-      if (hasOkHttpOnClasspath()) {
-        client = OkClientInstantiator.instantiate();
-      } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.GINGERBREAD) {
-        client = new AndroidApacheClient();
-      } else {
-        client = new UrlConnectionClient();
+    static class MainThreadExecutor implements Executor {
+      private final Handler handler = new Handler(Looper.getMainLooper());
+
+      @Override public void execute(Runnable r) {
+        handler.post(r);
       }
-      return new Client.Provider() {
-        @Override public Client get() {
-          return client;
-        }
-      };
     }
-
-    @Override Executor defaultHttpExecutor() {
-      return Executors.newCachedThreadPool(new ThreadFactory() {
-        @Override public Thread newThread(final Runnable r) {
-          return new Thread(new Runnable() {
-            @Override public void run() {
-              Process.setThreadPriority(THREAD_PRIORITY_BACKGROUND);
-              r.run();
-            }
-          }, RestAdapter.IDLE_THREAD_NAME);
-        }
-      });
-    }
-
-    @Override Executor defaultCallbackExecutor() {
-      return new MainThreadExecutor();
-    }
-
-    @Override RestAdapter.Log defaultLog() {
-      return new AndroidLog("Retrofit");
-    }
-  }
-
-  /** Determine whether or not OkHttp is present on the runtime classpath. */
-  private static boolean hasOkHttpOnClasspath() {
-    try {
-      Class.forName("com.squareup.okhttp.OkHttpClient");
-      return true;
-    } catch (ClassNotFoundException e) {
-      return false;
-    }
-  }
-
-  /**
-   * Indirection for OkHttp class to prevent VerifyErrors on Android 2.0 and earlier when the
-   * dependency is not present.
-   */
-  private static class OkClientInstantiator {
-    static Client instantiate() {
-      return new OkClient();
-    }
-  }
-
-  private static boolean hasRxJavaOnClasspath() {
-    try {
-      Class.forName("rx.Observable");
-      return true;
-    } catch (ClassNotFoundException e) {
-    }
-    return false;
   }
 }
