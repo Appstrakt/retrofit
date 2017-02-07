@@ -17,10 +17,11 @@ package com.example.retrofit;
 
 import java.io.IOException;
 import java.util.List;
-import retrofit.Call;
-import retrofit.Retrofit;
-import retrofit.http.GET;
-import retrofit.http.Path;
+import retrofit2.Call;
+import retrofit2.converter.gson.GsonConverterFactory;
+import retrofit2.Retrofit;
+import retrofit2.http.GET;
+import retrofit2.http.Path;
 
 public final class SimpleService {
   public static final String API_URL = "https://api.github.com";
@@ -43,9 +44,10 @@ public final class SimpleService {
   }
 
   public static void main(String... args) throws IOException {
-    // Create a very simple REST adapter which points the GitHub API endpoint.
+    // Create a very simple REST adapter which points the GitHub API.
     Retrofit retrofit = new Retrofit.Builder()
-        .endpoint(API_URL)
+        .baseUrl(API_URL)
+        .addConverterFactory(GsonConverterFactory.create())
         .build();
 
     // Create an instance of our GitHub API interface.

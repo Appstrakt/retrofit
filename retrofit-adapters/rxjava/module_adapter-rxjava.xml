@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="module_adapter-rxjava" default="compile.module.adapter-rxjava">
+  <dirname property="module.adapter-rxjava.basedir" file="${ant.file.module_adapter-rxjava}"/>
+  
+  <property name="module.jdk.home.adapter-rxjava" value="${project.jdk.home}"/>
+  <property name="module.jdk.bin.adapter-rxjava" value="${project.jdk.bin}"/>
+  <property name="module.jdk.classpath.adapter-rxjava" value="${project.jdk.classpath}"/>
+  
+  <property name="compiler.args.adapter-rxjava" value="-encoding UTF-8 -source 1.7 -target 1.7 ${compiler.args}"/>
+  
+  <property name="adapter-rxjava.output.dir" value="${module.adapter-rxjava.basedir}/target/classes"/>
+  <property name="adapter-rxjava.testoutput.dir" value="${module.adapter-rxjava.basedir}/target/test-classes"/>
+  
+  <path id="adapter-rxjava.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="adapter-rxjava.module.production.classpath">
+    <path refid="${module.jdk.classpath.adapter-rxjava}"/>
+    <pathelement location="${retrofit.output.dir}"/>
+    <path refid="library.maven:_com.squareup.okhttp3:okhttp:3.6.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okio:okio:1.11.0.classpath"/>
+    <path refid="library.maven:_io.reactivex:rxjava:1.2.0.classpath"/>
+  </path>
+  
+  <path id="adapter-rxjava.runtime.production.module.classpath">
+    <pathelement location="${adapter-rxjava.output.dir}"/>
+    <path refid="retrofit.runtime.production.module.classpath"/>
+    <path refid="library.maven:_com.squareup.okhttp3:okhttp:3.6.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okio:okio:1.11.0.classpath"/>
+    <path refid="library.maven:_io.reactivex:rxjava:1.2.0.classpath"/>
+  </path>
+  
+  <path id="adapter-rxjava.module.classpath">
+    <path refid="${module.jdk.classpath.adapter-rxjava}"/>
+    <pathelement location="${adapter-rxjava.output.dir}"/>
+    <pathelement location="${retrofit.testoutput.dir}"/>
+    <pathelement location="${retrofit.output.dir}"/>
+    <path refid="library.maven:_com.squareup.okhttp3:okhttp:3.6.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okio:okio:1.11.0.classpath"/>
+    <path refid="library.maven:_io.reactivex:rxjava:1.2.0.classpath"/>
+    <path refid="library.maven:_junit:junit:4.12.classpath"/>
+    <path refid="library.maven:_org.hamcrest:hamcrest-core:1.3.classpath"/>
+    <path refid="library.maven:_org.assertj:assertj-core:1.7.0.classpath"/>
+    <path refid="library.maven:_com.google.guava:guava:19.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okhttp3:mockwebserver:3.6.0.classpath"/>
+    <path refid="library.maven:_org.bouncycastle:bcprov-jdk15on:1.50.classpath"/>
+  </path>
+  
+  <path id="adapter-rxjava.runtime.module.classpath">
+    <pathelement location="${adapter-rxjava.testoutput.dir}"/>
+    <pathelement location="${adapter-rxjava.output.dir}"/>
+    <path refid="retrofit.runtime.module.classpath"/>
+    <path refid="library.maven:_com.squareup.okhttp3:okhttp:3.6.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okio:okio:1.11.0.classpath"/>
+    <path refid="library.maven:_io.reactivex:rxjava:1.2.0.classpath"/>
+    <path refid="library.maven:_junit:junit:4.12.classpath"/>
+    <path refid="library.maven:_org.hamcrest:hamcrest-core:1.3.classpath"/>
+    <path refid="library.maven:_org.assertj:assertj-core:1.7.0.classpath"/>
+    <path refid="library.maven:_com.google.guava:guava:19.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okhttp3:mockwebserver:3.6.0.classpath"/>
+    <path refid="library.maven:_org.bouncycastle:bcprov-jdk15on:1.50.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.adapter-rxjava">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.adapter-rxjava">
+    <patternset refid="excluded.from.module.adapter-rxjava"/>
+  </patternset>
+  
+  <path id="adapter-rxjava.module.sourcepath">
+    <dirset dir="${module.adapter-rxjava.basedir}">
+      <include name="src/main/java"/>
+    </dirset>
+  </path>
+  
+  <path id="adapter-rxjava.module.test.sourcepath">
+    <dirset dir="${module.adapter-rxjava.basedir}">
+      <include name="src/test/java"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.adapter-rxjava" depends="compile.module.adapter-rxjava.production,compile.module.adapter-rxjava.tests" description="Compile module adapter-rxjava"/>
+  
+  <target name="compile.module.adapter-rxjava.production" depends="register.custom.compilers,compile.module.retrofit" description="Compile module adapter-rxjava; production classes">
+    <mkdir dir="${adapter-rxjava.output.dir}"/>
+    <javac2 destdir="${adapter-rxjava.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.adapter-rxjava}/javac">
+      <compilerarg line="${compiler.args.adapter-rxjava}"/>
+      <bootclasspath refid="adapter-rxjava.module.bootclasspath"/>
+      <classpath refid="adapter-rxjava.module.production.classpath"/>
+      <src refid="adapter-rxjava.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.adapter-rxjava"/>
+    </javac2>
+    
+    <copy todir="${adapter-rxjava.output.dir}">
+      <fileset dir="${module.adapter-rxjava.basedir}/src/main/java">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.adapter-rxjava.tests" depends="register.custom.compilers,compile.module.adapter-rxjava.production" description="compile module adapter-rxjava; test classes" unless="skip.tests">
+    <mkdir dir="${adapter-rxjava.testoutput.dir}"/>
+    <javac2 destdir="${adapter-rxjava.testoutput.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.adapter-rxjava}/javac">
+      <compilerarg line="${compiler.args.adapter-rxjava}"/>
+      <bootclasspath refid="adapter-rxjava.module.bootclasspath"/>
+      <classpath refid="adapter-rxjava.module.classpath"/>
+      <src refid="adapter-rxjava.module.test.sourcepath"/>
+      <patternset refid="excluded.from.compilation.adapter-rxjava"/>
+    </javac2>
+    
+    <copy todir="${adapter-rxjava.testoutput.dir}">
+      <fileset dir="${module.adapter-rxjava.basedir}/src/test/java">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="clean.module.adapter-rxjava" description="cleanup module">
+    <delete dir="${adapter-rxjava.output.dir}"/>
+    <delete dir="${adapter-rxjava.testoutput.dir}"/>
+  </target>
+</project>

@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="module_converter-protobuf" default="compile.module.converter-protobuf">
+  <dirname property="module.converter-protobuf.basedir" file="${ant.file.module_converter-protobuf}"/>
+  
+  <property name="module.jdk.home.converter-protobuf" value="${project.jdk.home}"/>
+  <property name="module.jdk.bin.converter-protobuf" value="${project.jdk.bin}"/>
+  <property name="module.jdk.classpath.converter-protobuf" value="${project.jdk.classpath}"/>
+  
+  <property name="compiler.args.converter-protobuf" value="-encoding UTF-8 -source 1.7 -target 1.7 ${compiler.args}"/>
+  
+  <property name="converter-protobuf.output.dir" value="${module.converter-protobuf.basedir}/target/classes"/>
+  <property name="converter-protobuf.testoutput.dir" value="${module.converter-protobuf.basedir}/target/test-classes"/>
+  
+  <path id="converter-protobuf.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="converter-protobuf.module.production.classpath">
+    <path refid="${module.jdk.classpath.converter-protobuf}"/>
+    <pathelement location="${retrofit.output.dir}"/>
+    <path refid="library.maven:_com.squareup.okhttp3:okhttp:3.6.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okio:okio:1.11.0.classpath"/>
+    <path refid="library.maven:_com.google.protobuf:protobuf-java:3.0.0.classpath"/>
+  </path>
+  
+  <path id="converter-protobuf.runtime.production.module.classpath">
+    <pathelement location="${converter-protobuf.output.dir}"/>
+    <path refid="retrofit.runtime.production.module.classpath"/>
+    <path refid="library.maven:_com.squareup.okhttp3:okhttp:3.6.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okio:okio:1.11.0.classpath"/>
+    <path refid="library.maven:_com.google.protobuf:protobuf-java:3.0.0.classpath"/>
+  </path>
+  
+  <path id="converter-protobuf.module.classpath">
+    <path refid="${module.jdk.classpath.converter-protobuf}"/>
+    <pathelement location="${converter-protobuf.output.dir}"/>
+    <pathelement location="${retrofit.testoutput.dir}"/>
+    <pathelement location="${retrofit.output.dir}"/>
+    <path refid="library.maven:_com.squareup.okhttp3:okhttp:3.6.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okio:okio:1.11.0.classpath"/>
+    <path refid="library.maven:_com.google.protobuf:protobuf-java:3.0.0.classpath"/>
+    <path refid="library.maven:_junit:junit:4.12.classpath"/>
+    <path refid="library.maven:_org.hamcrest:hamcrest-core:1.3.classpath"/>
+    <path refid="library.maven:_com.squareup.okhttp3:mockwebserver:3.6.0.classpath"/>
+    <path refid="library.maven:_org.bouncycastle:bcprov-jdk15on:1.50.classpath"/>
+    <path refid="library.maven:_org.assertj:assertj-core:1.7.0.classpath"/>
+  </path>
+  
+  <path id="converter-protobuf.runtime.module.classpath">
+    <pathelement location="${converter-protobuf.testoutput.dir}"/>
+    <pathelement location="${converter-protobuf.output.dir}"/>
+    <path refid="retrofit.runtime.module.classpath"/>
+    <path refid="library.maven:_com.squareup.okhttp3:okhttp:3.6.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okio:okio:1.11.0.classpath"/>
+    <path refid="library.maven:_com.google.protobuf:protobuf-java:3.0.0.classpath"/>
+    <path refid="library.maven:_junit:junit:4.12.classpath"/>
+    <path refid="library.maven:_org.hamcrest:hamcrest-core:1.3.classpath"/>
+    <path refid="library.maven:_com.squareup.okhttp3:mockwebserver:3.6.0.classpath"/>
+    <path refid="library.maven:_org.bouncycastle:bcprov-jdk15on:1.50.classpath"/>
+    <path refid="library.maven:_org.assertj:assertj-core:1.7.0.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.converter-protobuf">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.converter-protobuf">
+    <patternset refid="excluded.from.module.converter-protobuf"/>
+  </patternset>
+  
+  <path id="converter-protobuf.module.sourcepath">
+    <dirset dir="${module.converter-protobuf.basedir}">
+      <include name="src/main/java"/>
+    </dirset>
+  </path>
+  
+  <path id="converter-protobuf.module.test.sourcepath">
+    <dirset dir="${module.converter-protobuf.basedir}">
+      <include name="src/test/java"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.converter-protobuf" depends="compile.module.converter-protobuf.production,compile.module.converter-protobuf.tests" description="Compile module converter-protobuf"/>
+  
+  <target name="compile.module.converter-protobuf.production" depends="register.custom.compilers,compile.module.retrofit" description="Compile module converter-protobuf; production classes">
+    <mkdir dir="${converter-protobuf.output.dir}"/>
+    <javac2 destdir="${converter-protobuf.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.converter-protobuf}/javac">
+      <compilerarg line="${compiler.args.converter-protobuf}"/>
+      <bootclasspath refid="converter-protobuf.module.bootclasspath"/>
+      <classpath refid="converter-protobuf.module.production.classpath"/>
+      <src refid="converter-protobuf.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.converter-protobuf"/>
+    </javac2>
+    
+    <copy todir="${converter-protobuf.output.dir}">
+      <fileset dir="${module.converter-protobuf.basedir}/src/main/java">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.converter-protobuf.tests" depends="register.custom.compilers,compile.module.converter-protobuf.production" description="compile module converter-protobuf; test classes" unless="skip.tests">
+    <mkdir dir="${converter-protobuf.testoutput.dir}"/>
+    <javac2 destdir="${converter-protobuf.testoutput.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.converter-protobuf}/javac">
+      <compilerarg line="${compiler.args.converter-protobuf}"/>
+      <bootclasspath refid="converter-protobuf.module.bootclasspath"/>
+      <classpath refid="converter-protobuf.module.classpath"/>
+      <src refid="converter-protobuf.module.test.sourcepath"/>
+      <patternset refid="excluded.from.compilation.converter-protobuf"/>
+    </javac2>
+    
+    <copy todir="${converter-protobuf.testoutput.dir}">
+      <fileset dir="${module.converter-protobuf.basedir}/src/test/java">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="clean.module.converter-protobuf" description="cleanup module">
+    <delete dir="${converter-protobuf.output.dir}"/>
+    <delete dir="${converter-protobuf.testoutput.dir}"/>
+  </target>
+</project>

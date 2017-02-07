@@ -1,6 +1,224 @@
 Change Log
 ==========
 
+Version 2.1.0 *(2016-06-15)*
+----------------------------
+
+ * New: `@HeaderMap` annotation and support for supplying an arbitrary number of headers to an endpoint.
+ * New: `@JsonAdapter` annotations on the `@Body` parameter and on the method will be propagated to Moshi
+   for creating the request and response adapters, respectively.
+ * Fix: Honor the `Content-Type` encoding of XML responses when deserializing response bodies.
+ * Fix: Remove the stacktrace from fake network exceptions created from retrofit-mock's `NetworkBehavior`.
+   They had the potential to be misleading and look like a library issue.
+ * Fix: Eagerly catch malformed `Content-Type` headers supplied via `@Header` or `@Headers`.
+
+
+Version 2.0.2 *(2016-04-14)*
+----------------------------
+
+ * New: `ProtoConverterFactory.createWithRegistry()` method accepts an extension registry to be used
+   when deserializing protos.
+ * Fix: Pass the correct `Call` instance to `Callback`'s `onResponse` and `onFailure` methods such
+   that calling `clone()` retains the correct threading behavior.
+ * Fix: Reduce the per-request allocation overhead for the RxJava call adapter.
+
+
+Version 2.0.1 *(2016-03-30)*
+----------------------------
+
+ * New: Support OkHttp's `HttpUrl` as a `@Url` parameter type.
+ * New: Support iterable and array `@Part` parameters using OkHttp's `MultipartBody.Part`.
+ * Fix: Honor backpressure in `Observable`s created from the RxJavaCallAdapterFactory.
+
+
+Version 2.0.0 *(2016-03-11)*
+----------------------------
+
+Retrofit 2 is a major release focused on extensibility. The API changes are numerous but solve
+shortcomings of the previous version and provide a path for future enhancement.
+
+Because the release includes breaking API changes, we're changing the project's package name from
+`retrofit` to `retrofit2`. This should make it possible for large applications and libraries to
+migrate incrementally. The Maven group ID is now `com.squareup.retrofit2`. For an explanation of
+this strategy, see Jake Wharton's post, [Java Interoperability Policy for Major Version
+Updates](http://jakewharton.com/java-interoperability-policy-for-major-version-updates/).
+
+ * **Service methods return `Call<T>`.** This allows them to be executed synchronously or
+   asynchronously using the same method definition. A `Call` instance represents a single
+   request/response pair so it can only be used once, but you can `clone()` it for re-use.
+   Invoking `cancel()` will cancel in-flight requests or prevent the request from even being
+   performed if it has not already.
+ 
+ * **Multiple converters for multiple serialization formats.** API calls returning different
+  formats (like JSON, protocol buffers, and plain text) no longer need to be separated into
+  separate service interfaces. Combine them together and add multiple converters. Converters are
+  chosen based on the response type you declare. Gson is no longer included by default, so you will
+  always need to add a converter for any serialization support. OkHttp's `RequestBody` and
+  `ResponseBody` types can always be used without adding one, however.
+   
+ * **Call adapters allow different execution mechanisms.** While `Call` is the built-in mechanism,
+   support for additional ones can be added similar to how different converters can be added.
+   RxJava's `Observable` support has moved into a separate artifact as a result, and support for
+   Java 8's `CompletableFuture` and Guava's `ListenableFuture` are also provided as additional
+   artifacts.
+   
+ * **Generic response type includes HTTP information and deserialized body.** You no longer have to
+   choose between the deserialized body and reading HTTP information. Every `Call` automatically
+   receives both via the `Response<T>` type and the RxJava, Guava, and Java 8 call adapters also
+   support it.
+   
+ * **@Url for hypermedia-like APIs.** When your API returns links for pagination, additional
+   resources, or updated content they can now be used with a service method whose first parameter
+   is annotated with `@Url`.
+
+Changes from beta 4:
+
+ * New: `RxJavaCallAdapterFactory` now supports service methods which return `Completable` which
+   ignores and discards response bodies, if any.
+ * New: `RxJavaCallAdapterFactory` supports supplying a default `Scheduler` which will be used
+   for `subscribeOn` on returned `Observable`, `Single`, and `Completable` instances.
+ * New: `MoshiConverterFactory` supports creating an instance which uses lenient parsing.
+ * New: `@Part` can omit the part name and use OkHttp's `MultipartBody.Part` type for supplying
+   parts. This lets you customize the headers, name, and filename and provide the part body in a
+   single argument.
+ * The `BaseUrl` interface and support for changeable base URLs was removed. This functionality
+   can be done using an OkHttp interceptor and a sample showcasing it was added.
+ * `Response.isSuccess()` was renamed to `Response.isSuccessful()` for parity with the name of
+   OkHttp's version of that method.
+ * Fix: Throw a more appropriate exception with a message when a resolved url (base URL + relative
+   URL) is malformed.
+ * Fix: `GsonConverterFactory` now honors settings on the `Gson` instance (like leniency).
+ * Fix: `ScalarsConverterFactory` now supports primitive scalar types in addition to boxed for
+   response body parsing.
+ * Fix: `Retrofit.callbackExecutor()` may now return an executor even when one was not explicitly
+   provided. This allows custom `CallAdapter.Factory` implementations to use it when triggering
+   callbacks to ensure they happen on the appropriate thread for the platform (e.g., Android).
+
+
+Version 2.0.0-beta4 *(2016-02-04)*
+----------------------------------
+
+ * New: `Call` instance is now passed to both `onResponse` and `onFailure` methods of `Callback`. This aids
+   in detecting when `onFailure` is called as a result of `Call.cancel()` by checking `Call.isCanceled()`.
+ * New: `Call.request()` returns (optionally creating) the `Request` object for the call. Note: If this is
+   called before `Call.execute()` or `Call.enqueue()` this will do relatively expensive work synchronously.
+   Doing so in performance-critical sections (like on the Android main thread) should be avoided.
+ * New: Support for the release version of OkHttp 3.0 and newer.
+ * New: `adapter-guava` module provides a `CallAdapter.Factory` for Guava's `ListenableFuture`.
+ * New: `adapter-java8` module provides a `CallAdapter.Factory` for Java 8's `CompleteableFuture`.
+ * New: `ScalarsConverterFactory` (from `converter-scalars` module) now supports parsing response bodies
+   into either `String`, the 8 primitive types, or the 8 boxed primitive types.
+ * New: Automatic support for sending callbacks to the iOS main thread when running via RoboVM.
+ * New: Method annotations are now passed to the factory for request body converters. This allows converters
+   to alter the structure of both request bodies and response bodies with a single method-level annotation.
+ * Each converter has been moved to its own package under `retrofit2.converter.<name>`. This prevents type
+   collisions when many converters are simultaneously in use.
+ * Fix: Exceptions thrown when unable to locate a `CallAdapter.Factory` for a method return type now
+   correctly list the `CallAdapter.Factory` instances checked.
+ * Fix: Ensure default methods on service interfaces can be invoked.
+ * Fix: Correctly resolve the generic parameter types of collection interfaces when subclasses of those
+   collections are used as method parameters.
+ * Fix: Do not encode `/` characters in `@Path` replacements when `encoded = true`.
+
+
+Version 2.0.0-beta3 *(2016-01-05)*
+----------------------------------
+
+ * New: All classes have been migrated to the `retrofit2.*` package name. The Maven groupId is now
+   `com.squareup.retrofit2`. This is in accordance with the
+   [Java Interoperability Policy for Major Version Updates](http://jakewharton.com/java-interoperability-policy-for-major-version-updates/).
+   With this change Retrofit 2.x can coexiest with Retrofit 1.x in the same project.
+ * New: Update to use the OkHttp 3 API and OkHttp 3.0.0-RC1 or newer is now required. Similar to the previous
+   point, OkHttp has a new package name (`okhttp3.*`) and Maven groupId (`com.squareup.okhttp3`) which allow
+   it to coexist with OkHttp 2.x in the same project.
+ * New: String converters allow for custom serialization of parameters that end up as strings (such as `@Path`,
+   `@Query`, `@Header`, etc.). `Converter.Factory` has a new `stringConverter` method which receives the
+   parameter type and annotations and can return a converter for that type. This allows providing custom
+   rendering of types like `Date`, `User`, etc. to a string before being used for its purpose. A default
+   converter will call `toString()` for any type which retains the mimics the previous behavior.
+ * New: OkHttp's `Call.Factory` type is now used as the HTTP client rather than using the `OkHttpClient` type
+   directly (`OkHttpClient` does implement `Call.Factory`). A `callFactory` method has been added to both
+   `Retrofit.Builder` and `Retrofit` to allow supplying alternate implementations of an HTTP client. The
+   `client(OkHttpClient)` method on `Retrofit.Builder` still exists as a convenience.
+ * New: `isExecuted()` method returns whether a `Call` has been synchronously or asynchronously executed.
+ * New: `isCanceled()` method returns whether a `Call` has been canceled. Use this in `onFailure` to determine
+   whether the callback was invoked from cancellation or actual transport failure.
+ * New: `converter-scalars` module provides a `Converter.Factory` for converting `String`, the 8 primitive
+   types, and the 8 boxed primitive types as `text/plain` bodies. Install this before your normal converter
+   to avoid passing these simple scalars through, for example, a JSON converter.
+ * New: `Converter.Factory` methods now receive a `Retrofit` instance which also now has methods for querying
+   the next converter for a given type. This allows implementations to delegate to others and provide
+   additional behavior without complete reimplementation.
+ * New: `@OPTIONS` annotation more easily allows for making OPTIONS requests.
+ * New: `@Part` annotation now supports `List` and array types.
+ * New: The `@Url` annotation now allows using `java.net.URI` or `android.net.Uri` (in addition to `String`)
+   as parameter types for providing relative or absolute endpoint URLs dynamically.
+ * New: The `retrofit-mock` module has been rewritten with a new `BehaviorDelegate` class for implementing
+   fake network behavior in a local mock implementation of your service endpoints. Documentation and more
+   tests are forthcoming, but the `SimpleMockService` demonstrates its use for now.
+ * Fix: Forbid Retrofit's `Response` type and OkHttp's `Response` type as the response body type given to
+   a `Call` (i.e., `Call<Response>`). OkHttp's `ResponseBody` type is the correct one to use when the raw
+   body contents are desired.
+ * Fix: The Gson converter now respects settings on the supplied `Gson` instance (such as `serializeNulls`).
+   This requires Gson 2.4 or newer.
+ * The Wire converter has been updated to the Wire 2.0 API.
+ * The change in 2.0.0-beta2 which provided the `Retrofit` instance to the `onResponse` callback of `Callback`
+   has been reverted. There are too many edge cases around providing the `Retrofit` object in order to allow
+   deserialization of the error body. To accommodate this use case, pass around the `Retrofit` response
+   manually or implement a custom `CallAdapter.Factory` does so automatically.
+
+
+Version 2.0.0-beta2 *(2015-09-28)*
+----------------------------------
+
+ * New: Using a response type of `Void` (e.g., `Call<Void>`) will ignore and discard the response body. This
+   can be used when there will be no response body (such as in a 201 response) or whenever the body is not
+   needed. `@Head` requests are now forced to use this as their response type.
+ * New: `validateEagerly()` method on `Retrofit.Builder` will verify the correctness of all service methods
+   on calls to `create()` instead of lazily validating on first use.
+ * New: `Converter` is now parameterized over both 'from' and 'to' types with a single `convert` method.
+   `Converter.Factory` is now an abstract class and has factory methods for both request body and response
+   body.
+ * New: `Converter.Factory` and `CallAdapter.Factory` now receive the method annotations when being created
+   for a return/response type and the parameter annotations when being created for a parameter type.
+ * New: `callAdapter()` method on `Retrofit` allows querying a `CallAdapter` for a given type. The
+   `nextCallAdapter()` method allows delegating to another `CallAdapter` from within a `CallAdapter.Factory`.
+   This is useful for composing call adapters to incrementally build up behavior.
+ * New: `requestConverter()` and `responseConverter()` methods on `Retrofit` allow querying a `Converter` for
+   a given type.
+ * New: `onResponse` method in `Callback` now receives the `Retrofit` instance. Combined with the
+   `responseConverter()` method on `Retrofit`, this provides a way of deserializing an error body on `Response`.
+   See the `DeserializeErrorBody` sample for an example.
+ * New: The `MoshiConverterFactory` has been updated for its v1.0.0.
+ * Fix: Using `ResponseBody` for the response type or `RequestBody` for a parameter type is now correctly
+   identified. Previously these types would erroneously be passed to the supplied converter.
+ * Fix: The encoding of `@Path` values has been corrected to conform to OkHttp's `HttpUrl`.
+ * Fix: Use form-data content disposition subtype for `@Multipart`.
+ * Fix: `Observable` and `Single`-based execution of requests now behave synchronously (and thus requires
+   `subscribeOn()` for running in the background).
+ * Fix: Correct `GsonConverterFactory` to honor the configuration of the `Gson` instances (such as not
+   serializing null values, the default).
+
+
+Version 2.0.0-beta1 *(2015-08-27)*
+----------------------------------
+
+ * New: `Call` encapsulates a single request/response HTTP call. A call can by run synchronously
+   via `execute()` or asynchronously via `enqueue()` and can be canceled with `cancel()`.
+ * New: `Response` is now parameterized and includes the deserialized body object.
+ * New: `@Url` parameter annotation allows passing a complete URL for an endpoint.
+ * New: OkHttp is now required as a dependency. Types like `TypedInput` and `TypedOutput` (and its
+   implementations), `Request`, and `Header` have been replaced with OkHttp types like `RequestBody`,
+   `ResponseBody`, and `Headers`.
+ * New: `CallAdapter` (and `Factory`) provides extension point for supporting multiple execution
+   mechanisms. An RxJava implementation is provided by a sibling module.
+ * New: `Converter` (and `Factory`) provides extension point for supporting multiple serialization
+   mechanisms. Gson, Jackson, Moshi, Protobuf, Wire, and SimpleXml implementations are provided by sibling
+   modules.
+ * Fix: A lot of things.
+ * Hello Droidcon NYC 2015!
+
+
 Version 1.9.0 *(2015-01-07)*
 ----------------------------
 

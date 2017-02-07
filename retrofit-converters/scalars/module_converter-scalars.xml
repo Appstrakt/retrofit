@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="module_converter-scalars" default="compile.module.converter-scalars">
+  <dirname property="module.converter-scalars.basedir" file="${ant.file.module_converter-scalars}"/>
+  
+  <property name="module.jdk.home.converter-scalars" value="${project.jdk.home}"/>
+  <property name="module.jdk.bin.converter-scalars" value="${project.jdk.bin}"/>
+  <property name="module.jdk.classpath.converter-scalars" value="${project.jdk.classpath}"/>
+  
+  <property name="compiler.args.converter-scalars" value="-encoding UTF-8 -source 1.7 -target 1.7 ${compiler.args}"/>
+  
+  <property name="converter-scalars.output.dir" value="${module.converter-scalars.basedir}/target/classes"/>
+  <property name="converter-scalars.testoutput.dir" value="${module.converter-scalars.basedir}/target/test-classes"/>
+  
+  <path id="converter-scalars.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="converter-scalars.module.production.classpath">
+    <path refid="${module.jdk.classpath.converter-scalars}"/>
+    <pathelement location="${retrofit.output.dir}"/>
+    <path refid="library.maven:_com.squareup.okhttp3:okhttp:3.6.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okio:okio:1.11.0.classpath"/>
+  </path>
+  
+  <path id="converter-scalars.runtime.production.module.classpath">
+    <pathelement location="${converter-scalars.output.dir}"/>
+    <path refid="retrofit.runtime.production.module.classpath"/>
+    <path refid="library.maven:_com.squareup.okhttp3:okhttp:3.6.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okio:okio:1.11.0.classpath"/>
+  </path>
+  
+  <path id="converter-scalars.module.classpath">
+    <path refid="${module.jdk.classpath.converter-scalars}"/>
+    <pathelement location="${converter-scalars.output.dir}"/>
+    <pathelement location="${retrofit.testoutput.dir}"/>
+    <pathelement location="${retrofit.output.dir}"/>
+    <path refid="library.maven:_com.squareup.okhttp3:okhttp:3.6.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okio:okio:1.11.0.classpath"/>
+    <path refid="library.maven:_junit:junit:4.12.classpath"/>
+    <path refid="library.maven:_org.hamcrest:hamcrest-core:1.3.classpath"/>
+    <path refid="library.maven:_com.squareup.okhttp3:mockwebserver:3.6.0.classpath"/>
+    <path refid="library.maven:_org.bouncycastle:bcprov-jdk15on:1.50.classpath"/>
+    <path refid="library.maven:_org.assertj:assertj-core:1.7.0.classpath"/>
+  </path>
+  
+  <path id="converter-scalars.runtime.module.classpath">
+    <pathelement location="${converter-scalars.testoutput.dir}"/>
+    <pathelement location="${converter-scalars.output.dir}"/>
+    <path refid="retrofit.runtime.module.classpath"/>
+    <path refid="library.maven:_com.squareup.okhttp3:okhttp:3.6.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okio:okio:1.11.0.classpath"/>
+    <path refid="library.maven:_junit:junit:4.12.classpath"/>
+    <path refid="library.maven:_org.hamcrest:hamcrest-core:1.3.classpath"/>
+    <path refid="library.maven:_com.squareup.okhttp3:mockwebserver:3.6.0.classpath"/>
+    <path refid="library.maven:_org.bouncycastle:bcprov-jdk15on:1.50.classpath"/>
+    <path refid="library.maven:_org.assertj:assertj-core:1.7.0.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.converter-scalars">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.converter-scalars">
+    <patternset refid="excluded.from.module.converter-scalars"/>
+  </patternset>
+  
+  <path id="converter-scalars.module.sourcepath">
+    <dirset dir="${module.converter-scalars.basedir}">
+      <include name="src/main/java"/>
+    </dirset>
+  </path>
+  
+  <path id="converter-scalars.module.test.sourcepath">
+    <dirset dir="${module.converter-scalars.basedir}">
+      <include name="src/test/java"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.converter-scalars" depends="compile.module.converter-scalars.production,compile.module.converter-scalars.tests" description="Compile module converter-scalars"/>
+  
+  <target name="compile.module.converter-scalars.production" depends="register.custom.compilers,compile.module.retrofit" description="Compile module converter-scalars; production classes">
+    <mkdir dir="${converter-scalars.output.dir}"/>
+    <javac2 destdir="${converter-scalars.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.converter-scalars}/javac">
+      <compilerarg line="${compiler.args.converter-scalars}"/>
+      <bootclasspath refid="converter-scalars.module.bootclasspath"/>
+      <classpath refid="converter-scalars.module.production.classpath"/>
+      <src refid="converter-scalars.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.converter-scalars"/>
+    </javac2>
+    
+    <copy todir="${converter-scalars.output.dir}">
+      <fileset dir="${module.converter-scalars.basedir}/src/main/java">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.converter-scalars.tests" depends="register.custom.compilers,compile.module.converter-scalars.production" description="compile module converter-scalars; test classes" unless="skip.tests">
+    <mkdir dir="${converter-scalars.testoutput.dir}"/>
+    <javac2 destdir="${converter-scalars.testoutput.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.converter-scalars}/javac">
+      <compilerarg line="${compiler.args.converter-scalars}"/>
+      <bootclasspath refid="converter-scalars.module.bootclasspath"/>
+      <classpath refid="converter-scalars.module.classpath"/>
+      <src refid="converter-scalars.module.test.sourcepath"/>
+      <patternset refid="excluded.from.compilation.converter-scalars"/>
+    </javac2>
+    
+    <copy todir="${converter-scalars.testoutput.dir}">
+      <fileset dir="${module.converter-scalars.basedir}/src/test/java">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="clean.module.converter-scalars" description="cleanup module">
+    <delete dir="${converter-scalars.output.dir}"/>
+    <delete dir="${converter-scalars.testoutput.dir}"/>
+  </target>
+</project>

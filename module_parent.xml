@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="module_parent" default="compile.module.parent">
+  <dirname property="module.parent.basedir" file="${ant.file.module_parent}"/>
+  
+  <property name="module.jdk.home.parent" value="${jdk.home.1.6}"/>
+  <property name="module.jdk.bin.parent" value="${jdk.bin.1.6}"/>
+  <property name="module.jdk.classpath.parent" value="jdk.classpath.1.6"/>
+  
+  <property name="compiler.args.parent" value="-encoding UTF-8 -source 1.5 -target 1.5 ${compiler.args}"/>
+  
+  <property name="parent.output.dir" value="${module.parent.basedir}/target/classes"/>
+  <property name="parent.testoutput.dir" value="${module.parent.basedir}/target/test-classes"/>
+  
+  <path id="parent.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="parent.module.production.classpath">
+    <path refid="${module.jdk.classpath.parent}"/>
+  </path>
+  
+  <path id="parent.runtime.production.module.classpath">
+    <pathelement location="${parent.output.dir}"/>
+  </path>
+  
+  <path id="parent.module.classpath">
+    <path refid="${module.jdk.classpath.parent}"/>
+    <pathelement location="${parent.output.dir}"/>
+  </path>
+  
+  <path id="parent.runtime.module.classpath">
+    <pathelement location="${parent.testoutput.dir}"/>
+    <pathelement location="${parent.output.dir}"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.parent">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.parent">
+    <patternset refid="excluded.from.module.parent"/>
+  </patternset>
+  
+  
+  <target name="compile.module.parent" depends="compile.module.parent.production,compile.module.parent.tests" description="Compile module parent"/>
+  
+  <target name="compile.module.parent.production" depends="register.custom.compilers" description="Compile module parent; production classes"/>
+  
+  <target name="compile.module.parent.tests" depends="register.custom.compilers,compile.module.parent.production" description="compile module parent; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.parent" description="cleanup module">
+    <delete dir="${parent.output.dir}"/>
+    <delete dir="${parent.testoutput.dir}"/>
+  </target>
+</project>

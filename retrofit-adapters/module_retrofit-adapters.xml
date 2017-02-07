@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="module_retrofit-adapters" default="compile.module.retrofit-adapters">
+  <dirname property="module.retrofit-adapters.basedir" file="${ant.file.module_retrofit-adapters}"/>
+  
+  <property name="module.jdk.home.retrofit-adapters" value="${project.jdk.home}"/>
+  <property name="module.jdk.bin.retrofit-adapters" value="${project.jdk.bin}"/>
+  <property name="module.jdk.classpath.retrofit-adapters" value="${project.jdk.classpath}"/>
+  
+  <property name="compiler.args.retrofit-adapters" value="-encoding UTF-8 -source 1.5 -target 1.5 ${compiler.args}"/>
+  
+  <property name="retrofit-adapters.output.dir" value="${module.retrofit-adapters.basedir}/target/classes"/>
+  <property name="retrofit-adapters.testoutput.dir" value="${module.retrofit-adapters.basedir}/target/test-classes"/>
+  
+  <path id="retrofit-adapters.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="retrofit-adapters.module.production.classpath">
+    <path refid="${module.jdk.classpath.retrofit-adapters}"/>
+  </path>
+  
+  <path id="retrofit-adapters.runtime.production.module.classpath">
+    <pathelement location="${retrofit-adapters.output.dir}"/>
+  </path>
+  
+  <path id="retrofit-adapters.module.classpath">
+    <path refid="${module.jdk.classpath.retrofit-adapters}"/>
+    <pathelement location="${retrofit-adapters.output.dir}"/>
+  </path>
+  
+  <path id="retrofit-adapters.runtime.module.classpath">
+    <pathelement location="${retrofit-adapters.testoutput.dir}"/>
+    <pathelement location="${retrofit-adapters.output.dir}"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.retrofit-adapters">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.retrofit-adapters">
+    <patternset refid="excluded.from.module.retrofit-adapters"/>
+  </patternset>
+  
+  
+  <target name="compile.module.retrofit-adapters" depends="compile.module.retrofit-adapters.production,compile.module.retrofit-adapters.tests" description="Compile module retrofit-adapters"/>
+  
+  <target name="compile.module.retrofit-adapters.production" depends="register.custom.compilers" description="Compile module retrofit-adapters; production classes"/>
+  
+  <target name="compile.module.retrofit-adapters.tests" depends="register.custom.compilers,compile.module.retrofit-adapters.production" description="compile module retrofit-adapters; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.retrofit-adapters" description="cleanup module">
+    <delete dir="${retrofit-adapters.output.dir}"/>
+    <delete dir="${retrofit-adapters.testoutput.dir}"/>
+  </target>
+</project>

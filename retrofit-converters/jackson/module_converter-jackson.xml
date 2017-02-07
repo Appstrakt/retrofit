@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="module_converter-jackson" default="compile.module.converter-jackson">
+  <dirname property="module.converter-jackson.basedir" file="${ant.file.module_converter-jackson}"/>
+  
+  <property name="module.jdk.home.converter-jackson" value="${project.jdk.home}"/>
+  <property name="module.jdk.bin.converter-jackson" value="${project.jdk.bin}"/>
+  <property name="module.jdk.classpath.converter-jackson" value="${project.jdk.classpath}"/>
+  
+  <property name="compiler.args.converter-jackson" value="-encoding UTF-8 -source 1.7 -target 1.7 ${compiler.args}"/>
+  
+  <property name="converter-jackson.output.dir" value="${module.converter-jackson.basedir}/target/classes"/>
+  <property name="converter-jackson.testoutput.dir" value="${module.converter-jackson.basedir}/target/test-classes"/>
+  
+  <path id="converter-jackson.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="converter-jackson.module.production.classpath">
+    <path refid="${module.jdk.classpath.converter-jackson}"/>
+    <pathelement location="${retrofit.output.dir}"/>
+    <path refid="library.maven:_com.squareup.okhttp3:okhttp:3.6.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okio:okio:1.11.0.classpath"/>
+    <path refid="library.maven:_com.fasterxml.jackson.core:jackson-databind:2.7.2.classpath"/>
+    <path refid="library.maven:_com.fasterxml.jackson.core:jackson-annotations:2.7.0.classpath"/>
+    <path refid="library.maven:_com.fasterxml.jackson.core:jackson-core:2.7.2.classpath"/>
+  </path>
+  
+  <path id="converter-jackson.runtime.production.module.classpath">
+    <pathelement location="${converter-jackson.output.dir}"/>
+    <path refid="retrofit.runtime.production.module.classpath"/>
+    <path refid="library.maven:_com.squareup.okhttp3:okhttp:3.6.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okio:okio:1.11.0.classpath"/>
+    <path refid="library.maven:_com.fasterxml.jackson.core:jackson-databind:2.7.2.classpath"/>
+    <path refid="library.maven:_com.fasterxml.jackson.core:jackson-annotations:2.7.0.classpath"/>
+    <path refid="library.maven:_com.fasterxml.jackson.core:jackson-core:2.7.2.classpath"/>
+  </path>
+  
+  <path id="converter-jackson.module.classpath">
+    <path refid="${module.jdk.classpath.converter-jackson}"/>
+    <pathelement location="${converter-jackson.output.dir}"/>
+    <pathelement location="${retrofit.testoutput.dir}"/>
+    <pathelement location="${retrofit.output.dir}"/>
+    <path refid="library.maven:_com.squareup.okhttp3:okhttp:3.6.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okio:okio:1.11.0.classpath"/>
+    <path refid="library.maven:_com.fasterxml.jackson.core:jackson-databind:2.7.2.classpath"/>
+    <path refid="library.maven:_com.fasterxml.jackson.core:jackson-annotations:2.7.0.classpath"/>
+    <path refid="library.maven:_com.fasterxml.jackson.core:jackson-core:2.7.2.classpath"/>
+    <path refid="library.maven:_junit:junit:4.12.classpath"/>
+    <path refid="library.maven:_org.hamcrest:hamcrest-core:1.3.classpath"/>
+    <path refid="library.maven:_com.squareup.okhttp3:mockwebserver:3.6.0.classpath"/>
+    <path refid="library.maven:_org.bouncycastle:bcprov-jdk15on:1.50.classpath"/>
+    <path refid="library.maven:_org.assertj:assertj-core:1.7.0.classpath"/>
+  </path>
+  
+  <path id="converter-jackson.runtime.module.classpath">
+    <pathelement location="${converter-jackson.testoutput.dir}"/>
+    <pathelement location="${converter-jackson.output.dir}"/>
+    <path refid="retrofit.runtime.module.classpath"/>
+    <path refid="library.maven:_com.squareup.okhttp3:okhttp:3.6.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okio:okio:1.11.0.classpath"/>
+    <path refid="library.maven:_com.fasterxml.jackson.core:jackson-databind:2.7.2.classpath"/>
+    <path refid="library.maven:_com.fasterxml.jackson.core:jackson-annotations:2.7.0.classpath"/>
+    <path refid="library.maven:_com.fasterxml.jackson.core:jackson-core:2.7.2.classpath"/>
+    <path refid="library.maven:_junit:junit:4.12.classpath"/>
+    <path refid="library.maven:_org.hamcrest:hamcrest-core:1.3.classpath"/>
+    <path refid="library.maven:_com.squareup.okhttp3:mockwebserver:3.6.0.classpath"/>
+    <path refid="library.maven:_org.bouncycastle:bcprov-jdk15on:1.50.classpath"/>
+    <path refid="library.maven:_org.assertj:assertj-core:1.7.0.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.converter-jackson">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.converter-jackson">
+    <patternset refid="excluded.from.module.converter-jackson"/>
+  </patternset>
+  
+  <path id="converter-jackson.module.sourcepath">
+    <dirset dir="${module.converter-jackson.basedir}">
+      <include name="src/main/java"/>
+    </dirset>
+  </path>
+  
+  <path id="converter-jackson.module.test.sourcepath">
+    <dirset dir="${module.converter-jackson.basedir}">
+      <include name="src/test/java"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.converter-jackson" depends="compile.module.converter-jackson.production,compile.module.converter-jackson.tests" description="Compile module converter-jackson"/>
+  
+  <target name="compile.module.converter-jackson.production" depends="register.custom.compilers,compile.module.retrofit" description="Compile module converter-jackson; production classes">
+    <mkdir dir="${converter-jackson.output.dir}"/>
+    <javac2 destdir="${converter-jackson.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.converter-jackson}/javac">
+      <compilerarg line="${compiler.args.converter-jackson}"/>
+      <bootclasspath refid="converter-jackson.module.bootclasspath"/>
+      <classpath refid="converter-jackson.module.production.classpath"/>
+      <src refid="converter-jackson.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.converter-jackson"/>
+    </javac2>
+    
+    <copy todir="${converter-jackson.output.dir}">
+      <fileset dir="${module.converter-jackson.basedir}/src/main/java">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.converter-jackson.tests" depends="register.custom.compilers,compile.module.converter-jackson.production" description="compile module converter-jackson; test classes" unless="skip.tests">
+    <mkdir dir="${converter-jackson.testoutput.dir}"/>
+    <javac2 destdir="${converter-jackson.testoutput.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.converter-jackson}/javac">
+      <compilerarg line="${compiler.args.converter-jackson}"/>
+      <bootclasspath refid="converter-jackson.module.bootclasspath"/>
+      <classpath refid="converter-jackson.module.classpath"/>
+      <src refid="converter-jackson.module.test.sourcepath"/>
+      <patternset refid="excluded.from.compilation.converter-jackson"/>
+    </javac2>
+    
+    <copy todir="${converter-jackson.testoutput.dir}">
+      <fileset dir="${module.converter-jackson.basedir}/src/test/java">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="clean.module.converter-jackson" description="cleanup module">
+    <delete dir="${converter-jackson.output.dir}"/>
+    <delete dir="${converter-jackson.testoutput.dir}"/>
+  </target>
+</project>

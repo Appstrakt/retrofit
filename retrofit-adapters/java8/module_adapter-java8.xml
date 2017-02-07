@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="module_adapter-java8" default="compile.module.adapter-java8">
+  <dirname property="module.adapter-java8.basedir" file="${ant.file.module_adapter-java8}"/>
+  
+  <property name="module.jdk.home.adapter-java8" value="${project.jdk.home}"/>
+  <property name="module.jdk.bin.adapter-java8" value="${project.jdk.bin}"/>
+  <property name="module.jdk.classpath.adapter-java8" value="${project.jdk.classpath}"/>
+  
+  <property name="compiler.args.adapter-java8" value="-encoding UTF-8 -source 8 -target 1.8 ${compiler.args}"/>
+  
+  <property name="adapter-java8.output.dir" value="${module.adapter-java8.basedir}/target/classes"/>
+  <property name="adapter-java8.testoutput.dir" value="${module.adapter-java8.basedir}/target/test-classes"/>
+  
+  <path id="adapter-java8.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="adapter-java8.module.production.classpath">
+    <path refid="${module.jdk.classpath.adapter-java8}"/>
+    <pathelement location="${retrofit.output.dir}"/>
+    <path refid="library.maven:_com.squareup.okhttp3:okhttp:3.6.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okio:okio:1.11.0.classpath"/>
+  </path>
+  
+  <path id="adapter-java8.runtime.production.module.classpath">
+    <pathelement location="${adapter-java8.output.dir}"/>
+    <path refid="retrofit.runtime.production.module.classpath"/>
+    <path refid="library.maven:_com.squareup.okhttp3:okhttp:3.6.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okio:okio:1.11.0.classpath"/>
+  </path>
+  
+  <path id="adapter-java8.module.classpath">
+    <path refid="${module.jdk.classpath.adapter-java8}"/>
+    <pathelement location="${adapter-java8.output.dir}"/>
+    <pathelement location="${retrofit.testoutput.dir}"/>
+    <pathelement location="${retrofit.output.dir}"/>
+    <path refid="library.maven:_com.squareup.okhttp3:okhttp:3.6.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okio:okio:1.11.0.classpath"/>
+    <path refid="library.maven:_junit:junit:4.12.classpath"/>
+    <path refid="library.maven:_org.hamcrest:hamcrest-core:1.3.classpath"/>
+    <path refid="library.maven:_org.assertj:assertj-core:1.7.0.classpath"/>
+    <path refid="library.maven:_com.google.guava:guava:19.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okhttp3:mockwebserver:3.6.0.classpath"/>
+    <path refid="library.maven:_org.bouncycastle:bcprov-jdk15on:1.50.classpath"/>
+  </path>
+  
+  <path id="adapter-java8.runtime.module.classpath">
+    <pathelement location="${adapter-java8.testoutput.dir}"/>
+    <pathelement location="${adapter-java8.output.dir}"/>
+    <path refid="retrofit.runtime.module.classpath"/>
+    <path refid="library.maven:_com.squareup.okhttp3:okhttp:3.6.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okio:okio:1.11.0.classpath"/>
+    <path refid="library.maven:_junit:junit:4.12.classpath"/>
+    <path refid="library.maven:_org.hamcrest:hamcrest-core:1.3.classpath"/>
+    <path refid="library.maven:_org.assertj:assertj-core:1.7.0.classpath"/>
+    <path refid="library.maven:_com.google.guava:guava:19.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okhttp3:mockwebserver:3.6.0.classpath"/>
+    <path refid="library.maven:_org.bouncycastle:bcprov-jdk15on:1.50.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.adapter-java8">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.adapter-java8">
+    <patternset refid="excluded.from.module.adapter-java8"/>
+  </patternset>
+  
+  <path id="adapter-java8.module.sourcepath">
+    <dirset dir="${module.adapter-java8.basedir}">
+      <include name="src/main/java"/>
+    </dirset>
+  </path>
+  
+  <path id="adapter-java8.module.test.sourcepath">
+    <dirset dir="${module.adapter-java8.basedir}">
+      <include name="src/test/java"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.adapter-java8" depends="compile.module.adapter-java8.production,compile.module.adapter-java8.tests" description="Compile module adapter-java8"/>
+  
+  <target name="compile.module.adapter-java8.production" depends="register.custom.compilers,compile.module.retrofit" description="Compile module adapter-java8; production classes">
+    <mkdir dir="${adapter-java8.output.dir}"/>
+    <javac2 destdir="${adapter-java8.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.adapter-java8}/javac">
+      <compilerarg line="${compiler.args.adapter-java8}"/>
+      <bootclasspath refid="adapter-java8.module.bootclasspath"/>
+      <classpath refid="adapter-java8.module.production.classpath"/>
+      <src refid="adapter-java8.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.adapter-java8"/>
+    </javac2>
+    
+    <copy todir="${adapter-java8.output.dir}">
+      <fileset dir="${module.adapter-java8.basedir}/src/main/java">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.adapter-java8.tests" depends="register.custom.compilers,compile.module.adapter-java8.production" description="compile module adapter-java8; test classes" unless="skip.tests">
+    <mkdir dir="${adapter-java8.testoutput.dir}"/>
+    <javac2 destdir="${adapter-java8.testoutput.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.adapter-java8}/javac">
+      <compilerarg line="${compiler.args.adapter-java8}"/>
+      <bootclasspath refid="adapter-java8.module.bootclasspath"/>
+      <classpath refid="adapter-java8.module.classpath"/>
+      <src refid="adapter-java8.module.test.sourcepath"/>
+      <patternset refid="excluded.from.compilation.adapter-java8"/>
+    </javac2>
+    
+    <copy todir="${adapter-java8.testoutput.dir}">
+      <fileset dir="${module.adapter-java8.basedir}/src/test/java">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="clean.module.adapter-java8" description="cleanup module">
+    <delete dir="${adapter-java8.output.dir}"/>
+    <delete dir="${adapter-java8.testoutput.dir}"/>
+  </target>
+</project>

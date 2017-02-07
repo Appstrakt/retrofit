@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="module_adapter-guava" default="compile.module.adapter-guava">
+  <dirname property="module.adapter-guava.basedir" file="${ant.file.module_adapter-guava}"/>
+  
+  <property name="module.jdk.home.adapter-guava" value="${project.jdk.home}"/>
+  <property name="module.jdk.bin.adapter-guava" value="${project.jdk.bin}"/>
+  <property name="module.jdk.classpath.adapter-guava" value="${project.jdk.classpath}"/>
+  
+  <property name="compiler.args.adapter-guava" value="-encoding UTF-8 -source 1.7 -target 1.7 ${compiler.args}"/>
+  
+  <property name="adapter-guava.output.dir" value="${module.adapter-guava.basedir}/target/classes"/>
+  <property name="adapter-guava.testoutput.dir" value="${module.adapter-guava.basedir}/target/test-classes"/>
+  
+  <path id="adapter-guava.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="adapter-guava.module.production.classpath">
+    <path refid="${module.jdk.classpath.adapter-guava}"/>
+    <pathelement location="${retrofit.output.dir}"/>
+    <path refid="library.maven:_com.squareup.okhttp3:okhttp:3.6.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okio:okio:1.11.0.classpath"/>
+    <path refid="library.maven:_com.google.guava:guava:19.0.classpath"/>
+  </path>
+  
+  <path id="adapter-guava.runtime.production.module.classpath">
+    <pathelement location="${adapter-guava.output.dir}"/>
+    <path refid="retrofit.runtime.production.module.classpath"/>
+    <path refid="library.maven:_com.squareup.okhttp3:okhttp:3.6.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okio:okio:1.11.0.classpath"/>
+    <path refid="library.maven:_com.google.guava:guava:19.0.classpath"/>
+  </path>
+  
+  <path id="adapter-guava.module.classpath">
+    <path refid="${module.jdk.classpath.adapter-guava}"/>
+    <pathelement location="${adapter-guava.output.dir}"/>
+    <pathelement location="${retrofit.testoutput.dir}"/>
+    <pathelement location="${retrofit.output.dir}"/>
+    <path refid="library.maven:_com.squareup.okhttp3:okhttp:3.6.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okio:okio:1.11.0.classpath"/>
+    <path refid="library.maven:_com.google.guava:guava:19.0.classpath"/>
+    <path refid="library.maven:_junit:junit:4.12.classpath"/>
+    <path refid="library.maven:_org.hamcrest:hamcrest-core:1.3.classpath"/>
+    <path refid="library.maven:_org.assertj:assertj-core:1.7.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okhttp3:mockwebserver:3.6.0.classpath"/>
+    <path refid="library.maven:_org.bouncycastle:bcprov-jdk15on:1.50.classpath"/>
+  </path>
+  
+  <path id="adapter-guava.runtime.module.classpath">
+    <pathelement location="${adapter-guava.testoutput.dir}"/>
+    <pathelement location="${adapter-guava.output.dir}"/>
+    <path refid="retrofit.runtime.module.classpath"/>
+    <path refid="library.maven:_com.squareup.okhttp3:okhttp:3.6.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okio:okio:1.11.0.classpath"/>
+    <path refid="library.maven:_com.google.guava:guava:19.0.classpath"/>
+    <path refid="library.maven:_junit:junit:4.12.classpath"/>
+    <path refid="library.maven:_org.hamcrest:hamcrest-core:1.3.classpath"/>
+    <path refid="library.maven:_org.assertj:assertj-core:1.7.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okhttp3:mockwebserver:3.6.0.classpath"/>
+    <path refid="library.maven:_org.bouncycastle:bcprov-jdk15on:1.50.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.adapter-guava">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.adapter-guava">
+    <patternset refid="excluded.from.module.adapter-guava"/>
+  </patternset>
+  
+  <path id="adapter-guava.module.sourcepath">
+    <dirset dir="${module.adapter-guava.basedir}">
+      <include name="src/main/java"/>
+    </dirset>
+  </path>
+  
+  <path id="adapter-guava.module.test.sourcepath">
+    <dirset dir="${module.adapter-guava.basedir}">
+      <include name="src/test/java"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.adapter-guava" depends="compile.module.adapter-guava.production,compile.module.adapter-guava.tests" description="Compile module adapter-guava"/>
+  
+  <target name="compile.module.adapter-guava.production" depends="register.custom.compilers,compile.module.retrofit" description="Compile module adapter-guava; production classes">
+    <mkdir dir="${adapter-guava.output.dir}"/>
+    <javac2 destdir="${adapter-guava.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.adapter-guava}/javac">
+      <compilerarg line="${compiler.args.adapter-guava}"/>
+      <bootclasspath refid="adapter-guava.module.bootclasspath"/>
+      <classpath refid="adapter-guava.module.production.classpath"/>
+      <src refid="adapter-guava.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.adapter-guava"/>
+    </javac2>
+    
+    <copy todir="${adapter-guava.output.dir}">
+      <fileset dir="${module.adapter-guava.basedir}/src/main/java">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.adapter-guava.tests" depends="register.custom.compilers,compile.module.adapter-guava.production" description="compile module adapter-guava; test classes" unless="skip.tests">
+    <mkdir dir="${adapter-guava.testoutput.dir}"/>
+    <javac2 destdir="${adapter-guava.testoutput.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.adapter-guava}/javac">
+      <compilerarg line="${compiler.args.adapter-guava}"/>
+      <bootclasspath refid="adapter-guava.module.bootclasspath"/>
+      <classpath refid="adapter-guava.module.classpath"/>
+      <src refid="adapter-guava.module.test.sourcepath"/>
+      <patternset refid="excluded.from.compilation.adapter-guava"/>
+    </javac2>
+    
+    <copy todir="${adapter-guava.testoutput.dir}">
+      <fileset dir="${module.adapter-guava.basedir}/src/test/java">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="clean.module.adapter-guava" description="cleanup module">
+    <delete dir="${adapter-guava.output.dir}"/>
+    <delete dir="${adapter-guava.testoutput.dir}"/>
+  </target>
+</project>

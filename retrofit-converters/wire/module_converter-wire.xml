@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="module_converter-wire" default="compile.module.converter-wire">
+  <dirname property="module.converter-wire.basedir" file="${ant.file.module_converter-wire}"/>
+  
+  <property name="module.jdk.home.converter-wire" value="${project.jdk.home}"/>
+  <property name="module.jdk.bin.converter-wire" value="${project.jdk.bin}"/>
+  <property name="module.jdk.classpath.converter-wire" value="${project.jdk.classpath}"/>
+  
+  <property name="compiler.args.converter-wire" value="-encoding UTF-8 -source 1.7 -target 1.7 ${compiler.args}"/>
+  
+  <property name="converter-wire.output.dir" value="${module.converter-wire.basedir}/target/classes"/>
+  <property name="converter-wire.testoutput.dir" value="${module.converter-wire.basedir}/target/test-classes"/>
+  
+  <path id="converter-wire.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="converter-wire.module.production.classpath">
+    <path refid="${module.jdk.classpath.converter-wire}"/>
+    <pathelement location="${retrofit.output.dir}"/>
+    <path refid="library.maven:_com.squareup.okhttp3:okhttp:3.6.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okio:okio:1.11.0.classpath"/>
+    <path refid="library.maven:_com.squareup.wire:wire-runtime:2.2.0.classpath"/>
+  </path>
+  
+  <path id="converter-wire.runtime.production.module.classpath">
+    <pathelement location="${converter-wire.output.dir}"/>
+    <path refid="retrofit.runtime.production.module.classpath"/>
+    <path refid="library.maven:_com.squareup.okhttp3:okhttp:3.6.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okio:okio:1.11.0.classpath"/>
+    <path refid="library.maven:_com.squareup.wire:wire-runtime:2.2.0.classpath"/>
+  </path>
+  
+  <path id="converter-wire.module.classpath">
+    <path refid="${module.jdk.classpath.converter-wire}"/>
+    <pathelement location="${converter-wire.output.dir}"/>
+    <pathelement location="${retrofit.testoutput.dir}"/>
+    <pathelement location="${retrofit.output.dir}"/>
+    <path refid="library.maven:_com.squareup.okhttp3:okhttp:3.6.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okio:okio:1.11.0.classpath"/>
+    <path refid="library.maven:_com.squareup.wire:wire-runtime:2.2.0.classpath"/>
+    <path refid="library.maven:_junit:junit:4.12.classpath"/>
+    <path refid="library.maven:_org.hamcrest:hamcrest-core:1.3.classpath"/>
+    <path refid="library.maven:_com.squareup.okhttp3:mockwebserver:3.6.0.classpath"/>
+    <path refid="library.maven:_org.bouncycastle:bcprov-jdk15on:1.50.classpath"/>
+    <path refid="library.maven:_org.assertj:assertj-core:1.7.0.classpath"/>
+  </path>
+  
+  <path id="converter-wire.runtime.module.classpath">
+    <pathelement location="${converter-wire.testoutput.dir}"/>
+    <pathelement location="${converter-wire.output.dir}"/>
+    <path refid="retrofit.runtime.module.classpath"/>
+    <path refid="library.maven:_com.squareup.okhttp3:okhttp:3.6.0.classpath"/>
+    <path refid="library.maven:_com.squareup.okio:okio:1.11.0.classpath"/>
+    <path refid="library.maven:_com.squareup.wire:wire-runtime:2.2.0.classpath"/>
+    <path refid="library.maven:_junit:junit:4.12.classpath"/>
+    <path refid="library.maven:_org.hamcrest:hamcrest-core:1.3.classpath"/>
+    <path refid="library.maven:_com.squareup.okhttp3:mockwebserver:3.6.0.classpath"/>
+    <path refid="library.maven:_org.bouncycastle:bcprov-jdk15on:1.50.classpath"/>
+    <path refid="library.maven:_org.assertj:assertj-core:1.7.0.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.converter-wire">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.converter-wire">
+    <patternset refid="excluded.from.module.converter-wire"/>
+  </patternset>
+  
+  <path id="converter-wire.module.sourcepath">
+    <dirset dir="${module.converter-wire.basedir}">
+      <include name="src/main/java"/>
+    </dirset>
+  </path>
+  
+  <path id="converter-wire.module.test.sourcepath">
+    <dirset dir="${module.converter-wire.basedir}">
+      <include name="src/test/java"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.converter-wire" depends="compile.module.converter-wire.production,compile.module.converter-wire.tests" description="Compile module converter-wire"/>
+  
+  <target name="compile.module.converter-wire.production" depends="register.custom.compilers,compile.module.retrofit" description="Compile module converter-wire; production classes">
+    <mkdir dir="${converter-wire.output.dir}"/>
+    <javac2 destdir="${converter-wire.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.converter-wire}/javac">
+      <compilerarg line="${compiler.args.converter-wire}"/>
+      <bootclasspath refid="converter-wire.module.bootclasspath"/>
+      <classpath refid="converter-wire.module.production.classpath"/>
+      <src refid="converter-wire.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.converter-wire"/>
+    </javac2>
+    
+    <copy todir="${converter-wire.output.dir}">
+      <fileset dir="${module.converter-wire.basedir}/src/main/java">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.converter-wire.tests" depends="register.custom.compilers,compile.module.converter-wire.production" description="compile module converter-wire; test classes" unless="skip.tests">
+    <mkdir dir="${converter-wire.testoutput.dir}"/>
+    <javac2 destdir="${converter-wire.testoutput.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.converter-wire}/javac">
+      <compilerarg line="${compiler.args.converter-wire}"/>
+      <bootclasspath refid="converter-wire.module.bootclasspath"/>
+      <classpath refid="converter-wire.module.classpath"/>
+      <src refid="converter-wire.module.test.sourcepath"/>
+      <patternset refid="excluded.from.compilation.converter-wire"/>
+    </javac2>
+    
+    <copy todir="${converter-wire.testoutput.dir}">
+      <fileset dir="${module.converter-wire.basedir}/src/test/java">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="clean.module.converter-wire" description="cleanup module">
+    <delete dir="${converter-wire.output.dir}"/>
+    <delete dir="${converter-wire.testoutput.dir}"/>
+  </target>
+</project>
