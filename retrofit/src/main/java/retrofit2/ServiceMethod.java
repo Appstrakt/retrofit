@@ -39,7 +39,7 @@ import retrofit2.http.*;
 /**
  * Adapts an invocation of an interface method into an HTTP call.
  */
-final class ServiceMethod<R, T> {
+public class ServiceMethod<R, T> {
     // Upper and lower characters, digits, underscores, and hyphens, starting with a character.
     static final String PARAM = "[a-zA-Z][a-zA-Z0-9_-]*";
     static final Pattern PARAM_URL_REGEX = Pattern.compile("\\{(" + PARAM + ")\\}");
@@ -60,7 +60,7 @@ final class ServiceMethod<R, T> {
     private final ParameterHandler<?>[] parameterHandlers;
     private ParameterHandler.Name.NameAnnotationHandler nameAnnotationHandler;
 
-    ServiceMethod(Builder<R, T> builder) {
+    public ServiceMethod(Builder<R, T> builder) {
         this.callFactory = builder.retrofit.callFactory();
         this.callAdapter = builder.callAdapter;
         this.baseUrl = builder.retrofit.baseUrl();

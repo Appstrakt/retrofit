@@ -26,7 +26,7 @@ import okhttp3.RequestBody;
 import okio.Buffer;
 import okio.BufferedSink;
 
-final class RequestBuilder {
+public class RequestBuilder {
   private static final char[] HEX_DIGITS =
       { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
   private static final String PATH_SEGMENT_ALWAYS_ENCODE_SET = " \"<>^`{}|\\?#";
@@ -45,7 +45,7 @@ final class RequestBuilder {
   private FormBody.Builder formBuilder;
   private RequestBody body;
 
-  RequestBuilder(String method, HttpUrl baseUrl, String relativeUrl, Headers headers,
+  public RequestBuilder(String method, HttpUrl baseUrl, String relativeUrl, Headers headers,
       MediaType contentType, boolean hasBody, boolean isFormEncoded, boolean isMultipart) {
     this.method = method;
     this.baseUrl = baseUrl;
@@ -73,7 +73,7 @@ final class RequestBuilder {
     this.relativeUrl = relativeUrl.toString();
   }
 
-  void addHeader(String name, String value) {
+  public void addHeader(String name, String value) {
     if ("Content-Type".equalsIgnoreCase(name)) {
       MediaType type = MediaType.parse(value);
       if (type == null) {

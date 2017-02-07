@@ -25,15 +25,14 @@ import okhttp3.RequestBody;
 
 import static retrofit2.Utils.checkNotNull;
 
-abstract class ParameterHandler<T> {
+public abstract class ParameterHandler<T> {
     abstract void apply(RequestBuilder builder, T value) throws IOException;
 
     final ParameterHandler<Iterable<T>> iterable() {
         return new ParameterHandler<Iterable<T>>() {
             @Override
             void apply(RequestBuilder builder, Iterable<T> values) throws IOException {
-                if (values == null) return; // Skip null values.
-
+                if (values == null) return; // Skip null values
                 for (T value : values) {
                     ParameterHandler.this.apply(builder, value);
                 }
@@ -276,7 +275,7 @@ abstract class ParameterHandler<T> {
         }
     }
 
-    static final class Name extends ParameterHandler<String> {
+    public static final class Name extends ParameterHandler<String> {
 
         private NameAnnotationHandler handler;
 
